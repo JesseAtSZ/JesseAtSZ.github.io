@@ -4,13 +4,27 @@
   
   
   <entry>
-    <title>Hello World</title>
-    <link href="/2021/12/27/hello-world/"/>
-    <url>/2021/12/27/hello-world/</url>
+    <title>Bitcask</title>
+    <link href="/2021/12/30/Bitcask/"/>
+    <url>/2021/12/30/Bitcask/</url>
     
-    <content type="html"><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p><h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p><h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p><h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p><h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure><p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>]]></content>
+    <content type="html"><![CDATA[<h1 id="Bitcask"><a href="#Bitcask" class="headerlink" title="Bitcask"></a>Bitcask</h1><h2 id="A-Log-Structured-Fast-KV-Store"><a href="#A-Log-Structured-Fast-KV-Store" class="headerlink" title="A Log-Structured Fast KV Store"></a>A Log-Structured Fast KV Store</h2><p>学习Bitcask的缘由是在Rust中文社区看到了一名高中生正在用Rust实现一个Key-Value数据库系统：Dorea，抱着学习的心态下载了这个项目研究了一下，这个数据库系统使用的存储方案是一个基于hash表结构和key-value的日志型存储模型，名为Bitcask。</p><p>Bitcask起源于一篇同名的数据库模型论文，这篇论文阅读起来没有什么障碍，读完很快就可以理解。豆瓣在2018年就已经基于Bitcask开发了适合于豆瓣使用场景的海量小文件存储系统BeansDB，并成功应用于应用于生产环境，类似的项目还有使用Go语言开发的RoseDB（未应用于生产环境）。</p><p>下面记录一下我对Bitcask的理解，后续会考虑将其应用到Dorea的开发中。</p><hr><p>论文地址：<a href="Bibliography-Collection" title="https://github.com/JesseAtSZ/Bibliography-Collection/blob/master/%5B01%5D%20Bitcask-%20A%20Log-Structured%20Hash%20Table%20for%20Fast%20KeyValue%20Data.pdf">Bitcask- A Log-Structured Hash Table for Fast KeyValue Data</a></p><hr><h3 id="日志型的数据文件"><a href="#日志型的数据文件" class="headerlink" title="日志型的数据文件"></a>日志型的数据文件</h3><p>所谓日志型，就是append only，所有写操作只允许追加新的数据而不允许修改老的数据，就像我们的各种服务器日志一样。</p><p>在Bitcask模型中，数据只增不减地写入文件中，每个文件有一定的大小限制，当文件大小达到到相应的限制时，就会产生一个新的文件并在新的文件中继续进行追加，而老的文件将只读不写。在任意时刻，只有一个文件是可以写入的，Bitcask模型中将当前可以写入的文件称为为Active data file，而其他的已经达到限制大小的文件，称为Older data file。</p><p>文件中的数据结构非常简单，每一条数据的结构分别为Key，Value，Key Size，Value Size，Timestamp，crc校验值，一条条这样格式的数据就组成了数据文件：</p><p><img src="https://github.com/JesseAtSZ/Markdown-Photo/blob/master/Bitcask_Datafiles.png%22Bitcask_Datafiles%22" alt="Bitcask_Datafiles"></p><p>如果数据文件这样持续的存下去，是会无限膨胀的，为了解决个问题，Bitcask有一个定期的Merge操作，定期将所有Older data file中的数据扫描一遍并生成新的Data file（没有包括Active data file 是因为它还在不停写入），这里的Merge其实就是将同一个Key的多个数据只保留最新的一个。每次Merge后，新生成的数据文件就不再有冗余数据了。</p><h3 id="基于Hash表的索引数据"><a href="#基于Hash表的索引数据" class="headerlink" title="基于Hash表的索引数据"></a>基于Hash表的索引数据</h3><p>Todo</p>]]></content>
     
     
+    <categories>
+      
+      <category>Database</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Database</tag>
+      
+      <tag>Bitcask</tag>
+      
+    </tags>
     
   </entry>
   
