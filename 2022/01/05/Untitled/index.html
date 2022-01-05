@@ -16,25 +16,24 @@
   <meta name="author" content="Jesse">
   <meta name="keywords" content="">
   
-    <meta name="description" content="BitcaskA Log-Structured Fast KV Store学习Bitcask的缘由是在Rust中文社区看到了一名高中生正在用Rust实现一个Key-Value数据库系统：Dorea，抱着学习的心态下载了这个项目研究了一下，这个数据库系统使用的存储方案是一个基于hash表结构和key-value的日志型存储模型，名为Bitcask。 Bitcask起源于一篇同名的数据库模型论文，这篇">
+    <meta name="description" content="Asynchronous Programming in Rust 记录对Rust异步编程的一些理解 关于Tokio Runtime Tokio is able to concurrently run many tasks on a few threads by repeatedly swapping the currently running task on each thread. Howeve">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Bitcask">
-<meta property="og:url" content="http://example.com/2021/12/30/Bitcask/index.html">
+<meta property="og:title" content="Asynchronous Programming in Rust">
+<meta property="og:url" content="http://example.com/2022/01/05/Untitled/index.html">
 <meta property="og:site_name" content="A blog by Jesse">
-<meta property="og:description" content="BitcaskA Log-Structured Fast KV Store学习Bitcask的缘由是在Rust中文社区看到了一名高中生正在用Rust实现一个Key-Value数据库系统：Dorea，抱着学习的心态下载了这个项目研究了一下，这个数据库系统使用的存储方案是一个基于hash表结构和key-value的日志型存储模型，名为Bitcask。 Bitcask起源于一篇同名的数据库模型论文，这篇">
+<meta property="og:description" content="Asynchronous Programming in Rust 记录对Rust异步编程的一些理解 关于Tokio Runtime Tokio is able to concurrently run many tasks on a few threads by repeatedly swapping the currently running task on each thread. Howeve">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/img/post/Bitcask_Datafiles.png">
-<meta property="og:image" content="http://example.com/img/post/Bitcask_KeyDir.png">
-<meta property="article:published_time" content="2021-12-30T07:24:00.000Z">
-<meta property="article:modified_time" content="2022-01-04T10:53:47.370Z">
+<meta property="og:image" content="http://example.com/img/post/block_in_place.png">
+<meta property="article:published_time" content="2022-01-05T08:21:00.000Z">
+<meta property="article:modified_time" content="2022-01-05T08:22:31.000Z">
 <meta property="article:author" content="Jesse">
-<meta property="article:tag" content="Database">
-<meta property="article:tag" content="Bitcask">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="Tokio">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/img/post/Bitcask_Datafiles.png">
+<meta name="twitter:image" content="http://example.com/img/post/block_in_place.png">
   
   
-  <title>Bitcask - A blog by Jesse</title>
+  <title>Asynchronous Programming in Rust - A blog by Jesse</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4/dist/css/bootstrap.min.css" />
 
@@ -180,7 +179,7 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="Bitcask">
+            <span class="h2" id="subtitle" title="Asynchronous Programming in Rust">
               
             </span>
 
@@ -190,8 +189,8 @@
   
     <span class="post-meta">
       <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-      <time datetime="2021-12-30 15:24" pubdate>
-        2021年12月30日 下午
+      <time datetime="2022-01-05 16:21" pubdate>
+        2022年1月5日 下午
       </time>
     </span>
   
@@ -201,7 +200,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      1.9k 字
+      2.6k 字
     </span>
   
 
@@ -210,7 +209,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      16 分钟
+      22 分钟
     </span>
   
 
@@ -239,30 +238,48 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Bitcask</h1>
+            <h1 style="display: none">Asynchronous Programming in Rust</h1>
             
             <div class="markdown-body">
-              <h1 id="Bitcask"><a href="#Bitcask" class="headerlink" title="Bitcask"></a>Bitcask</h1><h2 id="A-Log-Structured-Fast-KV-Store"><a href="#A-Log-Structured-Fast-KV-Store" class="headerlink" title="A Log-Structured Fast KV Store"></a>A Log-Structured Fast KV Store</h2><p>学习Bitcask的缘由是在Rust中文社区看到了一名高中生正在用Rust实现一个Key-Value数据库系统：Dorea，抱着学习的心态下载了这个项目研究了一下，这个数据库系统使用的存储方案是一个基于hash表结构和key-value的日志型存储模型，名为Bitcask。</p>
-<p>Bitcask起源于一篇同名的数据库模型论文，这篇论文阅读起来没有什么障碍，读完很快就可以理解。豆瓣在2018年就已经基于Bitcask开发了适合于豆瓣使用场景的海量小文件存储系统BeansDB，并成功应用于应用于生产环境，类似的项目还有使用Go语言开发的RoseDB（未应用于生产环境）。</p>
-<p>下面记录一下我对Bitcask的理解，后续会考虑将其应用到Dorea的开发中。</p>
+              <h1 id="Asynchronous-Programming-in-Rust"><a href="#Asynchronous-Programming-in-Rust" class="headerlink" title="Asynchronous Programming in Rust"></a>Asynchronous Programming in Rust</h1><hr>
+<p><strong>记录对Rust异步编程的一些理解</strong></p>
+<h3 id="关于Tokio-Runtime"><a href="#关于Tokio-Runtime" class="headerlink" title="关于Tokio Runtime"></a>关于Tokio Runtime</h3><blockquote>
+<p>Tokio is able to concurrently run many tasks on a few threads by repeatedly swapping the currently running task on each thread. However, this kind of swapping can only happen at .await points, so code that spends a long time without reaching an .await will prevent other tasks from running. To combat this, Tokio provides two kinds of threads: Core threads and blocking threads. The core threads are where all asynchronous code runs, and Tokio will by default spawn one for each CPU core. The blocking threads are spawned on demand, can be used to run blocking code that would otherwise block other tasks from running and are kept alive when not used for a certain amount of time which can be configured with thread_keep_alive. Since it is not possible for Tokio to swap out blocking tasks, like it can do with asynchronous code, the upper limit on the number of blocking threads is very large. These limits can be configured on the Builder.</p>
+</blockquote>
+<p>Tokio 通过在每个线程上频繁换入换出当前正在运行的Task，达到能够在多个线程上同时运行多个Task的效果。但是，这种交换只能在代码执行到.await时触发，因此一个Task长时间未执行.await将阻止其他Task的运行（因为线程一直被当前执行的Task占用）。为了解决这个问题，Tokio 提供了两种线程：<strong>核心线程</strong>和<strong>阻塞线程</strong>。核心线程是所有异步代码运行的地方，默认情况下，Tokio 将为每个 CPU core生成一个。阻塞线程是按需产生的，可用于运行阻塞代码，否则会阻塞其他Task的运行，并且在一段时间不使用时保持活动状态，可以配置为thread_keep_alive. 由于 Tokio 不可能像处理异步代码那样交换阻塞任务，因此阻塞线程数的上限可以非常大，可以在通过Runtime builder来手动配置。</p>
+<p>也就是说，Tokio Runtime在会存在两个线程池：<strong>阻塞线程池（Blocking threads）</strong>和<strong>异步线程池（Core threads）</strong></p>
+<ul>
+<li><strong>阻塞线程池</strong>可以用于运行同步代码，线程池默认上限为512，我们可以手动指定最大数量，它会随着程序的运行动态申请。</li>
+<li><strong>异步线程池</strong>可以用于运行异步代码，线程池中默认的数量为CPU核心数，异步线程池中的线程占满后数量不会再增加。</li>
+</ul>
 <hr>
-<p>论文地址：<a target="_blank" rel="noopener" href="https://github.com/JesseAtSZ/Bibliography-Collection">Bitcask- A Log-Structured Hash Table for Fast KeyValue Data</a></p>
+<h3 id="关于同步与异步互相调用"><a href="#关于同步与异步互相调用" class="headerlink" title="关于同步与异步互相调用"></a>关于同步与异步互相调用</h3><p>正常同步和异步的执行是这样的：</p>
+<ul>
+<li>在完全同步的代码中，执行逻辑比较简单，占用当前线程顺序执行即可，阻塞当前线程是可以理解的也是必须的。</li>
+<li>在常规的异步代码中，遇到耗时会阻塞线程的操作可以通过调用.await，将其换出线程并换入其他Task，不会阻塞当前异步线程。</li>
+</ul>
+<p>Rust中普通fn方法为同步方法，执行过程中会持续占用当前线程；而async fn为异步方法，在执行过程中遇到.await时会被换出当前线程。</p>
+<p>所以换个角度理解，<strong>一个方法是普通fn，那么就应当阻塞当前线程，而如果一个方法是async fn，就应该对外保证不会长时间阻塞当前线程</strong>，这也是我们在开发过程中应当遵守的原则。</p>
+<p>我们的Tokio使用场景中，存在许多场景是比上面的情况要复杂的，有同步与异步混用的情况，即同步代码调用异步代码或是异步代码调用同步代码，开发过程中出现的一个问题是，异步调用了同步代码，同步代码阻塞了异步线程导致了异步Task无法得到线程去执行，所以说到底，这个问题产生的原因在于我们违背了这个原则：<strong>一个方法是普通fn，那么就应当阻塞当前线程，而如果一个方法是async fn，就应该对外保证不会长时间阻塞当前线程</strong>。</p>
 <hr>
-<h3 id="日志型的数据文件"><a href="#日志型的数据文件" class="headerlink" title="日志型的数据文件"></a>日志型的数据文件</h3><p>所谓日志型，就是Append only，所有写操作只允许追加新的数据而不允许修改老的数据，就像我们的各种服务器日志一样。</p>
-<p>在Bitcask模型中，数据只增不减地写入文件中，每个文件有一定的大小限制，当文件大小达到到相应的限制时，就会产生一个新的文件并在新的文件中继续进行追加，而老的文件将只读不写。在任意时刻，只有一个文件是可以写入的，Bitcask模型中将当前可以写入的文件称为为Active Data File，而其他的已经达到限制大小的文件，称为Old Data File。</p>
-<p>文件中的数据结构非常简单，每一条数据的结构分别为Key，Value，Key Size，Value Size，Timestamp，Crc校验值，一条条这样格式的数据就组成了数据文件：</p>
-<p><img src="/img/post/Bitcask_Datafiles.png" srcset="/img/loading.gif" lazyload alt="Bitcask_Datafiles"></p>
-<p>如果数据文件这样持续的存下去，是会无限膨胀的，为了解决个问题，Bitcask有一个定期的Merge操作，定期将所有Old Data File中的数据扫描一遍并生成新的Data File（没有包括Active Data File 是因为它还在不停写入），这里的Merge其实就是将同一个Key的多个数据只保留最新的一个。每次Merge后，新生成的数据文件就不再有冗余数据了。</p>
-<h3 id="基于Hash-Table的索引数据"><a href="#基于Hash-Table的索引数据" class="headerlink" title="基于Hash Table的索引数据"></a>基于Hash Table的索引数据</h3><p>上面讲到的是数据文件，日志类型的数据文件会让我们的写入操作非常快，日志型的优势之一是将磁盘当作磁带，顺序读写的效率非常高，但是如果在这样的日志型数据上使用Key值进行顺序查找，是一件非常低效的事情，所以需要使用一些方法来提高查找效率。</p>
-<p>在Bitcask模型中，使用了一个基于Hash Table的索引数据结构，除了存储在磁盘上的数据文件，还有另外一块数据，那就是存储在内存中的Hash Table，Hash Table的作用是通过Key值快速的定位到Value的位置。Hash Table的结构大致如下图所示：</p>
-<p><img src="/img/post/Bitcask_KeyDir.png" srcset="/img/loading.gif" lazyload alt="Bitcask_Datafiles"></p>
-<p>Hash Table对应的这个结构中包括了三个用于定位数据Value的信息，分别是文件Id号(FILEID)，Value值在文件中的位置（VPOS），Value值的大小（VSZ），于是我们通过读取FILEID对应文件的VPOS开始的VSZ个字节，就可以得到我们需要的Value值。</p>
-<h3 id="使用Hint-File对索引进行持久化"><a href="#使用Hint-File对索引进行持久化" class="headerlink" title="使用Hint File对索引进行持久化"></a>使用Hint File对索引进行持久化</h3><p>我们称其为索引的Hash Table，是存储在内存中的，Bitcask模型中并不保证在断电或重启后的Hash Table中的索引数据不丢失。</p>
-<p>因此，我们每次启动时需要整个扫描一遍我们的数据文件，重建Hash Table索引，如果数据文件很大，这个重建的过程将非常耗时。因此Bitcask模型中包含了一个称作Hint File的部分，目的在于提高重建Hash Table索引的速度。</p>
-<p>上面讲到在Old Data File进行merge操作时，会产生新的Data File，而Bitcask模型实际还建议同时生成一个Hint File，这个Hint File中每一项的数据结构，与Data file中的数据结构非常相似，不同的是他并不存储具体的Value值，而是存储Value的位置（像在Hash Table中的一样）,Hint File包含Key、Key Size、Value Size、Value Position、Timestamp。</p>
-<p>这样，在重建Hash Table时，就不需要再扫描所有Data File文件，而只需要将Hint File中的数据一行行读取即可，这样就可以大大提高重启数据库的速度。</p>
-<h3 id="更多资料"><a href="#更多资料" class="headerlink" title="更多资料"></a>更多资料</h3><p><a target="_blank" rel="noopener" href="https://arpitbhayani.me/blogs/bitcask">Bitcask - A Log-Structured Fast KV Store</a></p>
-<p><a target="_blank" rel="noopener" href="https://dorea.mrxzx.info/">Dorea Database</a></p>
+<h3 id="Spawn，Spawn-blocking，Block-in-place"><a href="#Spawn，Spawn-blocking，Block-in-place" class="headerlink" title="Spawn，Spawn blocking，Block in place"></a>Spawn，Spawn blocking，Block in place</h3><p>在编写同步与异步代码的过程中应当想办法满足上面的原则：</p>
+<p><strong>同步调用异步（fn -&gt;async）</strong>：最外层函数为fn，所以要保证整个函数为同步的，可以使用block_on()的方式：</p>
+<pre><code>pub fn block_on&lt;F: Future&gt;(&amp;self, future: F) -&gt; F::Output
+</code></pre>
+<blockquote>
+<p>Run a future to completion on the Tokio runtime. This is the runtime’s entry point.</p>
+<p>This runs the given future on the current thread, blocking until it is complete, and yielding its resolved result. Any tasks or timers which the future spawns internally will be executed on the runtime.</p>
+</blockquote>
+<p>block会阻塞当前线程，直至运行完成，这样可以保证整个函数对外是同步的。</p>
+<p><strong>异步调用同步（async-&gt;fn）</strong>：最外层函数为async，所以要保证整个函数为异步的，可以使用spawn_blocking()的方式：</p>
+<pre><code>pub fn spawn_blocking&lt;F, R&gt;(f: F) -&gt; JoinHandle&lt;R&gt; 
+</code></pre>
+<blockquote>
+<p>Runs the provided closure on a thread where blocking is acceptable.</p>
+</blockquote>
+<p>spawn blocking会使用阻塞线程池上的线程来运行同步函数，调用spawn blocking的函数会让出异步线程让其他Task运行。</p>
+<p>关于block in place，曾向Tokio的作者请教过：<a target="_blank" rel="noopener" href="https://github.com/tokio-rs/tokio/discussions/4003">about block in place()</a></p>
+<p><img src="/img/post/block_in_place.png" srcset="/img/loading.gif" lazyload alt="block in place"></p>
 
             </div>
             <hr>
@@ -272,7 +289,7 @@
                   <div class="post-meta mr-3">
                     <i class="iconfont icon-category"></i>
                     
-                      <a class="hover-with-bg" href="/categories/Database/">Database</a>
+                      <a class="hover-with-bg" href="/categories/Rust/">Rust</a>
                     
                   </div>
                 
@@ -280,9 +297,9 @@
                   <div class="post-meta">
                     <i class="iconfont icon-tags"></i>
                     
-                      <a class="hover-with-bg" href="/tags/Database/">Database</a>
+                      <a class="hover-with-bg" href="/tags/Rust/">Rust</a>
                     
-                      <a class="hover-with-bg" href="/tags/Bitcask/">Bitcask</a>
+                      <a class="hover-with-bg" href="/tags/Tokio/">Tokio</a>
                     
                   </div>
                 
@@ -299,15 +316,15 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2022/01/05/Untitled/">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Asynchronous Programming in Rust</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
+                    
+                      <a href="/2021/12/30/Bitcask/">
+                        <span class="hidden-mobile">Bitcask</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
                     
                   </article>
                 </div>
