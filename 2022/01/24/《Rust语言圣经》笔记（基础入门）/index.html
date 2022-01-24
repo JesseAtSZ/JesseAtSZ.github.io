@@ -16,16 +16,17 @@
   <meta name="author" content="Jesse">
   <meta name="keywords" content="">
   
-    <meta name="description" content="《Rust语言圣经》笔记（基础入门） 最近在学习《Rust语言圣经》 ，并参与了贡献（一不小心成了二作），希望大家多提意见，一起完善这个项目。 usize、isize类型的引入isize 和 usize 类型取决于程序运行的计算机cpu类型：若cpu是32位的，则这两个类型是32位的，同理，若cpu是64位，那么它们则是64位。 所有权的引入Rust之所以能万众瞩目，是因为其内存安全的特性。在以往">
+    <meta name="description" content="《Rust语言圣经》笔记（基础入门）最近在学习《Rust语言圣经》 ，并参与了贡献（一不小心成了二作），希望大家多提意见，一起完善这个项目。 usize、isize类型的引入isize 和 usize 类型取决于程序运行的计算机cpu类型：若cpu是32位的，则这两个类型是32位的，同理，若cpu是64位，那么它们则是64位。 所有权的引入Rust之所以能万众瞩目，是因为其内存安全的特性。在以往，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="《Rust语言圣经》笔记（基础入门）">
 <meta property="og:url" content="http://example.com/2022/01/24/%E3%80%8ARust%E8%AF%AD%E8%A8%80%E5%9C%A3%E7%BB%8F%E3%80%8B%E7%AC%94%E8%AE%B0%EF%BC%88%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8%EF%BC%89/index.html">
 <meta property="og:site_name" content="A blog by Jesse">
-<meta property="og:description" content="《Rust语言圣经》笔记（基础入门） 最近在学习《Rust语言圣经》 ，并参与了贡献（一不小心成了二作），希望大家多提意见，一起完善这个项目。 usize、isize类型的引入isize 和 usize 类型取决于程序运行的计算机cpu类型：若cpu是32位的，则这两个类型是32位的，同理，若cpu是64位，那么它们则是64位。 所有权的引入Rust之所以能万众瞩目，是因为其内存安全的特性。在以往">
+<meta property="og:description" content="《Rust语言圣经》笔记（基础入门）最近在学习《Rust语言圣经》 ，并参与了贡献（一不小心成了二作），希望大家多提意见，一起完善这个项目。 usize、isize类型的引入isize 和 usize 类型取决于程序运行的计算机cpu类型：若cpu是32位的，则这两个类型是32位的，同理，若cpu是64位，那么它们则是64位。 所有权的引入Rust之所以能万众瞩目，是因为其内存安全的特性。在以往，">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2022-01-24T02:53:45.000Z">
-<meta property="article:modified_time" content="2022-01-24T02:57:43.830Z">
+<meta property="article:published_time" content="2022-01-24T02:53:00.000Z">
+<meta property="article:modified_time" content="2022-01-24T04:00:13.689Z">
 <meta property="article:author" content="Jesse">
+<meta property="article:tag" content="Rust">
 <meta name="twitter:card" content="summary_large_image">
   
   
@@ -237,8 +238,7 @@
             <h1 style="display: none">《Rust语言圣经》笔记（基础入门）</h1>
             
             <div class="markdown-body">
-              <h1 id="《Rust语言圣经》笔记（基础入门）"><a href="#《Rust语言圣经》笔记（基础入门）" class="headerlink" title="《Rust语言圣经》笔记（基础入门）"></a>《Rust语言圣经》笔记（基础入门）</h1><hr>
-<p>最近在学习<a target="_blank" rel="noopener" href="https://github.com/sunface/rust-course">《Rust语言圣经》</a> ，并参与了贡献（一不小心成了二作），希望大家多提意见，一起完善这个项目。</p>
+              <h1 id="《Rust语言圣经》笔记（基础入门）"><a href="#《Rust语言圣经》笔记（基础入门）" class="headerlink" title="《Rust语言圣经》笔记（基础入门）"></a>《Rust语言圣经》笔记（基础入门）</h1><p>最近在学习<a target="_blank" rel="noopener" href="https://github.com/sunface/rust-course">《Rust语言圣经》</a> ，并参与了贡献（一不小心成了二作），希望大家多提意见，一起完善这个项目。</p>
 <h2 id="usize、isize类型的引入"><a href="#usize、isize类型的引入" class="headerlink" title="usize、isize类型的引入"></a>usize、isize类型的引入</h2><p>isize 和 usize 类型取决于程序运行的计算机cpu类型：若cpu是32位的，则这两个类型是32位的，同理，若cpu是64位，那么它们则是64位。</p>
 <h2 id="所有权的引入"><a href="#所有权的引入" class="headerlink" title="所有权的引入"></a>所有权的引入</h2><p>Rust之所以能万众瞩目，是因为其内存安全的特性。在以往，内存安全几乎都是通过GC来保证的，但是GC会带来性能、内存占用以及Stop the world等问题，在高性能场景和系统编程上是不可接受的，因此Rust采用了所有权系统。</p>
 <p>所有的程序都必须和计算机内存打交道，如何从内存中申请空间来存放程序的运行内容，如何在不需要的时候释放这些空间，成了重中之重，也是所有编程语言设计的难点之一。在计算机语言不断演变过程中，出现了三种流派：</p>
@@ -369,6 +369,20 @@ match msg &#123;
             <div>
               <div class="post-metas mb-3">
                 
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Rust/">Rust</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Rust/">Rust</a>
+                    
+                  </div>
                 
               </div>
               
