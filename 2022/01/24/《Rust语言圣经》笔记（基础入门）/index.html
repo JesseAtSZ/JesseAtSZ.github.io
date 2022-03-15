@@ -24,7 +24,7 @@
 <meta property="og:description" content="《Rust语言圣经》笔记（基础入门）最近在学习《Rust语言圣经》 ，并参与了贡献（一不小心成了二作），希望大家多提意见，一起完善这个项目。 usize、isize类型的引入isize 和 usize 类型取决于程序运行的计算机cpu类型：若cpu是32位的，则这两个类型是32位的，同理，若cpu是64位，那么它们则是64位。 所有权的引入Rust之所以能万众瞩目，是因为其内存安全的特性。在以往，">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-01-24T02:53:00.000Z">
-<meta property="article:modified_time" content="2022-01-24T04:00:13.689Z">
+<meta property="article:modified_time" content="2022-01-25T03:04:31.479Z">
 <meta property="article:author" content="Jesse">
 <meta property="article:tag" content="Rust">
 <meta name="twitter:card" content="summary_large_image">
@@ -197,7 +197,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      5.4k 字
+      6.8k 字
     </span>
   
 
@@ -206,7 +206,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      46 分钟
+      57 分钟
     </span>
   
 
@@ -333,6 +333,55 @@ match msg &#123;
 <p>第二个分支只在模式中指定了一个范围，<code>id</code> 字段的值可以是 <code>10、11 或 12</code>，不过这个模式的代码并不知情也不能使用 <code>id</code> 字段中的值，因为没有将 <code>id</code> 值保存进一个变量。</p>
 <p>最后一个分支指定了一个没有范围的变量，此时确实拥有可以用于分支代码的变量 <code>id</code>，因为这里使用了结构体字段简写语法。不过此分支中没有像头两个分支那样对 <code>id</code> 字段的值进行测试：任何值都会匹配此分支。</p>
 <p>当既想要限定分支范围，又想要使用分支的变量时，就可以用<code>@</code>来绑定到一个新的变量上，实现想要的功能。</p>
+<h2 id="关联类型"><a href="#关联类型" class="headerlink" title="关联类型"></a>关联类型</h2><p>关联类型是在特征定义的语句块中，申明一个自定义类型，这样就可以在特征的方法签名中使用该类型：</p>
+<pre><code>pub trait Iterator &#123;
+    type Item;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt;;
+&#125;
+</code></pre>
+<p>以上是标准库中的迭代器特征 <code>Iterator</code>，它有一个 <code>Item</code> 关联类型，用于替代遍历的值的类型。</p>
+<p>同时，<code>next</code> 方法也返回了一个 <code>Item</code> 类型，不过使用 <code>Option</code> 枚举进行了包裹，假如迭代器中的值是 <code>i32</code> 类型，那么调用 <code>next</code> 方法就将获取一个 <code>Option&lt;i32&gt;</code> 的值。</p>
+<p><code>Self</code> 用来指代当前的特征实例，那么 <code>Self::Item</code> 就用来指代特征实例中具体的 <code>Item</code> 类型：</p>
+<pre><code>impl Iterator for Counter &#123;
+       type Item = u32;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; &#123;
+    // --snip--
+    ｝
+｝
+</code></pre>
+<p>在上述代码中，我们为 <code>Counter</code> 类型实现了 <code>Iterator</code> 特征，那么 <code>Self</code> 就是当前的 <code>Iterator</code> 特征对象， <code>Item</code> 就是 <code>u32</code> 类型。</p>
+<p>这里也可以使用泛型，例如如下代码：</p>
+<pre><code>pub trait Iterator&lt;Item&gt; &#123;
+    fn next(&amp;mut self) -&gt; Option&lt;Item&gt;;
+&#125;
+</code></pre>
+<p>但是考虑到代码的可读性，当你使用了泛型后，你需要在所有地方都写 <code>Iterator&lt;Item&gt;</code>，而使用了关联类型，你只需要写 <code>Iterator</code>，当类型定义复杂时，这种写法可以极大的增加可读性：</p>
+<pre><code>pub trait CacheableItem: Clone + Default + fmt::Debug + Decodable + Encodable &#123;
+  type Address: AsRef&lt;[u8]&gt; + Clone + fmt::Debug + Eq + Hash;
+  fn is_null(&amp;self) -&gt; bool;
+&#125;
+</code></pre>
+<p>例如上面的代码， <code>Address</code> 的写法自然远比 <code>AsRef&lt;[u8]&gt; + Clone + fmt::Debug + Eq + Hash</code> 要简单的多，而且含义清晰。</p>
+<p>再例如，如果使用泛型，你将得到以下的代码：</p>
+<pre><code>trait Container&lt;A,B&gt; &#123;
+    fn contains(&amp;self,a: A,b: B) -&gt; bool;
+&#125;
+
+fn difference&lt;A,B,C&gt;(container: &amp;C) -&gt; i32
+  where C : Container&lt;A,B&gt; &#123;
+    ...
+&#125;
+</code></pre>
+<p>可以看到，由于使用了泛型，导致函数头部也必须增加泛型的声明，而使用关联类型，将得到可读性好得多的代码：</p>
+<pre><code>trait Container&#123;
+    type A;
+    type B;
+    fn contains(&amp;self, a: &amp;Self::A, b: &amp;Self::B) -&gt; bool;
+&#125;
+</code></pre>
+<p>fn difference&lt;C: Container&gt;(container: &amp;C) {}</p>
 <h2 id="impl-Trait-和-dyn-Trait"><a href="#impl-Trait-和-dyn-Trait" class="headerlink" title="impl Trait 和 dyn Trait"></a>impl Trait 和 dyn Trait</h2><p>impl Trait 和 dyn Trait 在 Rust 分别被称为静态分发和动态分发。</p>
 <p>语法的角度：impl Trait会出现在两个位置：参数位置,返回值位置。</p>
 <p>当代码涉及多态时, 需要某种机制决定实际调用类型，Rust 的 Trait 可以看作某些具有通过特性类型的集合, 静态分发, 正如静态类型语言的”静态”一词说明的, 在编译期就确定了具体调用类型。 Rust 编译器会通过单态化(Monomorphization) 将泛型函数展开。通过单态化,编译器消除了泛型,而且没有性能损耗,这也是 Rust 提倡的形式, 缺点是过多展开可能会导致编译生成的二级制文件体积过大,这时候可能需要重构代码。</p>
@@ -396,6 +445,12 @@ match msg &#123;
                 <div class="post-prevnext">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2022/03/15/MySQL-BinLog-%E6%9B%B4%E6%96%B0/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">MySQL BinLog 更新</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">
