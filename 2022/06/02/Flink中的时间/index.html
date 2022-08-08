@@ -28,8 +28,14 @@
 <meta property="og:image" content="http://example.com/img/post/Flink_Star_Wars.png">
 <meta property="og:image" content="http://example.com/img/post/Flink_Window_Close_And_Open.png">
 <meta property="og:image" content="http://example.com/img/post/Flink_Watermark.png">
+<meta property="og:image" content="http://example.com/img/post/Watermark_In_Ordered_Flow.png">
+<meta property="og:image" content="http://example.com/img/post/Watermark_In_Disordered_Flow_01.png">
+<meta property="og:image" content="http://example.com/img/post/Watermark_In_Disordered_Flow_02.png">
+<meta property="og:image" content="http://example.com/img/post/Watermark_In_Disordered_Flow_03.png">
+<meta property="og:image" content="http://example.com/img/post/Late_Data.png">
+<meta property="og:image" content="http://example.com/img/post/Watermark_Transmit.png">
 <meta property="article:published_time" content="2022-06-02T09:00:00.000Z">
-<meta property="article:modified_time" content="2022-08-06T09:23:38.164Z">
+<meta property="article:modified_time" content="2022-08-08T02:14:17.807Z">
 <meta property="article:author" content="Jesse">
 <meta property="article:tag" content="Flink">
 <meta name="twitter:card" content="summary_large_image">
@@ -203,7 +209,7 @@
   
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      6.9k 字
+      6.5k 字
     </span>
   
 
@@ -212,7 +218,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      58 分钟
+      55 分钟
     </span>
   
 
@@ -267,7 +273,7 @@
 <p><strong>在分布式系统中，节点“各自为政”，是没有统一时钟的，数据和控制信息都通过网络进行传输。</strong></p>
 <p>比如现在有一个任务是窗口聚合，我们希望将每个小时的数据收集起来进行统计处理。而对于并行的窗口子任务，它们所在节点不同，系统时间也会有差异；当我们希望统计 8 点~9 点的数据时，对并行任务来说其实并不是“同时”的，收集到的数据也会有误差。</p>
 <p>无法由 JobManager 来协调，因为网络传输会有延迟，且这延迟是不确定的，JobManager 发出的同步信号无法同时到达所有节点；</p>
-<p>** 想要拥有一个全局统一的时钟，在分布式系统里是做不到的。**</p>
+<p><strong>想要拥有一个全局统一的时钟，在分布式系统里是做不到的。</strong></p>
 <p>另一个麻烦的问题是，在流式处理的过程中，数据是在不同的节点间不停流动的，这同样也会有网络传输的延迟。这样一来，当上下游任务需要跨节点传输数据时，它们对于“时间”的理解也会有所不同。</p>
 <p>例如，上游任务在 8 点 59 分 59 秒发出一条数据，到下游要做窗口计算时已经是 9 点零 1 秒了，那这条数据到底该不该被收到 8 点~9 点的窗口呢？</p>
 <p>所以，当我们希望对数据按照时间窗口来进行收集计算时，“时间”到底以谁为标准就非常重要了。</p>
@@ -335,22 +341,22 @@
 <li><strong>同时涌来的数据时间差会非常小（比如几毫秒），往往对处理计算也没什么影响</strong></li>
 </ul>
 <p>所以为了提高效率，一般会每隔一段时间生成一个水位线，这个水位线的时间戳，就是当前最新数据的时间戳，所以这时的水位线，其实就是有序流中的一个周期性出现的时间标记。</p>
-<p>![Watermark In Ordered Flow](/img/post/Watermark In Ordered Flow.png)</p>
+<p><img src="/img/post/Watermark_In_Ordered_Flow.png" srcset="/img/loading.gif" lazyload alt="Watermark In Ordered Flow"></p>
 <p>需要注意的是，对于水位线的周期性生成，周期时间是指处理时间（系统时间），而不是事件时间。</p>
 <h4 id="无序流中的水位线"><a href="#无序流中的水位线" class="headerlink" title="无序流中的水位线"></a>无序流中的水位线</h4><p>在分布式系统中，数据在节点间传输，会因为网络传输延迟的不确定性，导致顺序发生改变，即“乱序数据”。</p>
-<p>![Watermark In Disordered Flow](/img/post/Watermark In Disordered Flow 01.png)</p>
+<p><img src="/img/post/Watermark_In_Disordered_Flow_01.png" srcset="/img/loading.gif" lazyload alt="Watermark In Disordered Flow"></p>
 <p>如果还是和之前一样，靠数据来驱动，每来一个数据就提取它的时间戳、插入一个水位线，那么有可能新的时间戳比之前的还小，直接将这个时间的水位线再插入，“时钟”就回退了，但是水位线代表时钟，时光不能倒流，水位线的时间戳也不能减小。</p>
 <p>所以插入新的水位线时，要先判断一下时间戳是否比之前的大，否则就不再生成新的水位线，也就是说，只有数据的时间戳比当前时钟大，才能推动时钟前进，这时才插入水位线。</p>
-<p>![Watermark In Disordered Flow](/img/post/Watermark In Disordered Flow 02.png)</p>
+<p><img src="/img/post/Watermark_In_Disordered_Flow_02.png" srcset="/img/loading.gif" lazyload alt="Watermark In Disordered Flow"></p>
 <p>如果考虑到大量数据同时到来的处理效率，同样可以周期性地生成水位线。这时只需要保存一下之前所有数据中的最大时间戳，需要插入水位线时，就直接以它作为时间戳生成新的水位线。</p>
-<p>![Watermark In Disordered Flow](/img/post/Watermark In Disordered Flow 03.png)</p>
+<p><img src="/img/post/Watermark_In_Disordered_Flow_03.png" srcset="/img/loading.gif" lazyload alt="Watermark In Disordered Flow"></p>
 <h4 id="迟到数据的处理"><a href="#迟到数据的处理" class="headerlink" title="迟到数据的处理"></a>迟到数据的处理</h4><p>上面的例子中，当 9 秒产生的数据到来之后，我们就直接将时钟推进到了9 秒；如果有一个窗口结束时间就是 9 秒，那么这时窗口就应该关闭、将收集到的所有数据计算输出结果了。</p>
 <p>但事实上，由于数据是乱序的，还可能有时间戳为 7 秒、8 秒的数据在 9 秒的数据之后才到来，这就是“迟到数据”（late data）。</p>
 <p>回到生产线发货的例子，商品不是按照生产时间顺序到来的，所以有可能 9 点生产的商品已经到了，司机认为已经到了9 点，所以直接发车；但是可能还会有8 点 59 分59 秒生产的商品迟到了，没有赶上这班车。</p>
 <p>解决办法就是稍微等一会儿：9 点发车，可以等到 9 点10分，等货物都到齐了再出发。</p>
 <p>为了做到形式上仍然是9 点发车，可以更改一下时钟推进的逻辑：当一个货品到达时，不要直接用它的生产时间作为当前时间，而是减上两秒，这就相当于把车上的逻辑时钟调慢了（把司机手上的表调慢两秒）。</p>
 <p>回到上面的例子，为了让窗口能够正确收集到迟到的数据，也可以等上2 秒；也就是用当前已有数据的最大时间戳减去 2 秒，就是要插入的水位线的时间戳，这样的话，9 秒的数据到来之后，事件时钟不会直接推进到 9 秒，而是进展到了7 秒；必须等到11 秒的数据到来之后，事件时钟才会进展到 9 秒，这时迟到数据也都已收集齐，0~9 秒的窗口就可以正确计算结果了。</p>
-<p>![Late Data](/img/post/Late Data.png)</p>
+<p><img src="/img/post/Late_Data.png" srcset="/img/loading.gif" lazyload alt="Late Data"></p>
 <p>这里等待两秒是依据我们的经验，未必能处理所有的乱序数据。</p>
 <p>解决方法是可以试着再多等几秒，也就是把时钟调得更慢一些。最终的目的，就是要让窗口能够把所有迟到数据都收进来，得到正确的计算结果。</p>
 <p>对应到水位线上，其实就是要保证，<strong>当前时间已经进展到了这个时间戳，在这之后不可能再有迟到数据来了</strong>。</p>
@@ -378,7 +384,7 @@
 <p><strong>重分区传输</strong>：</p>
 <p><strong>水位线定义的本质：它表示的是“当前时间之前的数据，都已经到齐了”</strong>。</p>
 <p>如果一个任务收到了来自上游并行任务的不同的水位线，说明上游各个分区处理得有快有慢，这时我们要以“这之前的数据全部到齐”为标准（木桶原理？）。</p>
-<p>![Watermark Transmit](/img/post/Watermark Transmit.png)</p>
+<p><img src="/img/post/Watermark_Transmit.png" srcset="/img/loading.gif" lazyload alt="Watermark Transmit"></p>
 <h2 id="水位线的总结"><a href="#水位线的总结" class="headerlink" title="水位线的总结"></a>水位线的总结</h2><ul>
 <li><strong>水位线在事件时间的世界里面，承担了时钟的角色</strong></li>
 <li><strong>水位线是一种特殊的事件，由程序员通过编程插入的数据流里面，然后跟随数据流向下游流动</strong></li>
